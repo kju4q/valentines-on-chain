@@ -1,5 +1,8 @@
 import React, { useState } from "react";
 import { useValentineGifts } from "../hooks/useValentineGifts";
+import { AIGiftCreator } from "./AIGiftCreator";
+import type { GiftSuggestion } from "../services/ai/GiftAdvisor";
+import { GiftAdvisor } from "../services/ai/GiftAdvisor";
 
 interface TransactionModalProps {
   transaction: {
@@ -11,6 +14,7 @@ interface TransactionModalProps {
 }
 
 const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
+  const [showAI, setShowAI] = useState(false);
   const [recipient, setRecipient] = useState(transaction.recipient);
   const [amount, setAmount] = useState(transaction.amount || "");
   const { sendEthGift, sendUsdcGift, sendSheFiGift, isLoading, ready } =
@@ -18,6 +22,30 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
+  const [message, setMessage] = useState("");
+
+  const handleGiftSelect = (suggestion: GiftSuggestion) => {
+    if (suggestion.type === "eth" || suggestion.type === "usdc") {
+      setAmount(suggestion.amount);
+    }
+    setShowAI(false);
+  };
+
+  const getAISuggestion = async () => {
+    try {
+      const advisor = new GiftAdvisor(import.meta.env.VITE_OPENAI_API_KEY);
+
+      const suggestion = await advisor.suggestGift(
+        "Suggest a romantic Valentine's gift with a sweet message"
+      );
+
+      setAmount(suggestion.amount);
+      setMessage(suggestion.message);
+      // Show success feedback with suggestion.emoji
+    } catch (error) {
+      setError("Cupid is taking a break, try again!");
+    }
+  };
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -66,13 +94,42 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
               Your gift is on its way to your cutie!
             </p>
           </div>
+        ) : showAI ? (
+          <>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-pink-600">
+                AI Gift Suggestions
+              </h2>
+              <button
+                onClick={() => setShowAI(false)}
+                className="text-gray-500 hover:text-gray-700"
+              >
+                ← Back
+              </button>
+            </div>
+            <AIGiftCreator
+              onGiftSelect={handleGiftSelect}
+              onSuggestion={getAISuggestion}
+            />
+          </>
         ) : (
           <form onSubmit={handleSubmit}>
-            <h2 className="text-2xl font-bold text-pink-600 mb-6">
-              {transaction.type === "crypto"
-                ? "Send Crypto Love"
-                : "Gift SheFi Course"}
-            </h2>
+            <div className="flex justify-between items-center mb-6">
+              <h2 className="text-2xl font-bold text-pink-600">
+                {transaction.type === "crypto"
+                  ? "Send Crypto Love"
+                  : "Gift SheFi Course"}
+              </h2>
+              {transaction.type === "crypto" && (
+                <button
+                  type="button"
+                  onClick={() => setShowAI(true)}
+                  className="text-sm text-pink-500 hover:text-pink-600"
+                >
+                  Ask Cupid for Ideas ��
+                </button>
+              )}
+            </div>
             <div className="space-y-4">
               <div>
                 <label className="block text-sm font-medium text-pink-600 mb-1">

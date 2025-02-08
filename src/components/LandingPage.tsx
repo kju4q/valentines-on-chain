@@ -9,7 +9,6 @@ const LandingPage = () => {
     top: Math.floor(Math.random() * 90) + 5,
     delay: Math.random() * 5,
     duration: Math.floor(Math.random() * 10) + 10,
-    s,
   }));
 
   return (
