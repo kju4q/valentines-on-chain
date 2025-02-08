@@ -4,12 +4,12 @@ import { usePrivy } from "@privy-io/react-auth";
 const LandingPage = () => {
   const { login } = usePrivy();
 
-  // Pre-calculate random positions for hearts
   const hearts = Array.from({ length: 20 }, () => ({
-    left: Math.floor(Math.random() * 90) + 5, // 5-95% to keep hearts within bounds
+    left: Math.floor(Math.random() * 90) + 5,
     top: Math.floor(Math.random() * 90) + 5,
     delay: Math.random() * 5,
-    duration: Math.floor(Math.random() * 10) + 10, // 10-20s
+    duration: Math.floor(Math.random() * 10) + 10,
+    s,
   }));
 
   return (
