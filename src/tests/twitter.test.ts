@@ -1,34 +1,42 @@
-import { TwitterApi, ApiResponseError } from "twitter-api-v2";
-import dotenv from "dotenv";
+import { MockTwitterAPI } from "../services/twitter/MockTwitterAPI";
 
-dotenv.config();
-
-async function testTwitterAuth() {
-  console.log("🐦 Testing Twitter Authentication...");
-
-  const client = new TwitterApi({
-    appKey: process.env.TWITTER_API_KEY!,
-    appSecret: process.env.TWITTER_API_SECRET!,
-    accessToken: process.env.TWITTER_ACCESS_TOKEN!,
-    accessSecret: process.env.TWITTER_ACCESS_SECRET!,
-  });
+async function testTwitterScenarios() {
+  const twitter = new MockTwitterAPI();
 
   try {
-    // Try to get own user info to test auth
-    const me = await client.v2.me();
-    console.log("✅ Authentication successful!");
-    console.log("Bot account:", me.data);
-  } catch (error: unknown) {
-    if (error instanceof ApiResponseError) {
-      console.error("❌ Authentication failed:", error.data);
-    } else if (error instanceof Error) {
-      console.error("❌ Unexpected error:", error.message);
+    console.log("\n🧪 Testing First Gift NFT Tweet:");
+    const firstGiftTweet = await twitter.tweet(`
+🌹 First Valentine Gift from 0xHopelessRomantic!
+💝 0.1 ETH sent with love
+#ValentinesOnChain #BaseChain
+    `);
+    console.log("✅ First gift tweet sent:", firstGiftTweet.id);
+
+    console.log("\n🧪 Testing NFT Mint Tweet with Image:");
+    const nftTweet = await twitter.tweetWithMedia(
+      `💘 New Valentine NFT Minted!
+🎨 A unique love token on Base
+#ValentinesOnChain #NFT`,
+      "mock-nft-image-url"
+    );
+    console.log("✅ NFT mint tweet sent:", nftTweet.id);
+
+    console.log("\n🧪 Testing Rate Limit:");
+    for (let i = 0; i < 13; i++) {
+      await twitter.tweet(`Test tweet ${i + 1}`);
+    }
+  } catch (error) {
+    if (error instanceof Error && error.message === "Rate limit exceeded") {
+      console.log("✅ Rate limit handling works as expected");
     } else {
-      console.error("❌ Unknown error:", error);
+      console.error("❌ Test failed:", error);
     }
   }
 }
 
-testTwitterAuth().catch((error: unknown) => {
-  console.error("Fatal error:", error instanceof Error ? error.message : error);
-});
+// Run tests
+testTwitterScenarios()
+  .then(() => {
+    console.log("\n🎉 All test scenarios completed");
+  })
+  .catch(console.error);

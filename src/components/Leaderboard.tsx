@@ -12,6 +12,7 @@ interface LeaderboardEntry {
   address: string;
   nickname: string;
   points: number;
+  rank: string;
   nfts: {
     tokenId: string;
     image: string;
@@ -37,6 +38,15 @@ const validateEnvVars = () => {
     return false;
   }
   return true;
+};
+
+const getLoveRank = (points: number) => {
+  if (points >= 1000) return "Cupid";
+  if (points >= 500) return "Angel";
+  if (points >= 250) return "Romeo";
+  if (points >= 100) return "Poet";
+  if (points >= 50) return "Lover";
+  return "Admirer";
 };
 
 export const Leaderboard = () => {
@@ -171,10 +181,9 @@ export const Leaderboard = () => {
             (address) => ({
               address: `${address.slice(0, 6)}...${address.slice(-4)}`,
               nickname: generateNickname(address),
-              points:
-                (giftsBySender[address] || 0) * 10 + // 10 points per gift
-                (nftOwners.get(address)?.length || 0) * 50, // 50 points per NFT
-              nfts: (nftOwners.get(address) || []).map((tokenId) => ({
+              points: (nftOwners.get(address)?.length || 0) * 50, // 50 points per NFT
+              rank: getLoveRank((nftOwners.get(address)?.length || 0) * 50),
+              nfts: Array.from(nftOwners.get(address) || []).map((tokenId) => ({
                 tokenId,
                 image: generateNFTImage("first"),
                 type: "first" as const,
@@ -213,14 +222,14 @@ export const Leaderboard = () => {
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-pink-600 flex items-center justify-center gap-2">
           <TrophyIcon className="w-6 h-6" />
-          Valentine Champions
+          Valentine's Hall of Love
         </h2>
       </div>
 
       <div className="bg-white/30 backdrop-blur-sm rounded-xl overflow-hidden">
         <div className="grid grid-cols-5 gap-4 p-4 bg-pink-500 text-white font-semibold">
-          <div className="col-span-2">Gifter</div>
-          <div className="text-center">Gifts</div>
+          <div className="col-span-2">Valentine</div>
+          <div className="text-center">Rank</div>
           <div className="text-center">NFTs</div>
           <div className="text-center">Points</div>
         </div>
@@ -237,8 +246,8 @@ export const Leaderboard = () => {
                 </div>
                 <div className="text-sm text-pink-500/80">{entry.address}</div>
               </div>
-              <div className="text-center text-pink-600">
-                {entry.totalGifts}
+              <div className="text-center font-medium text-pink-600">
+                {entry.rank}
               </div>
               <div className="text-center flex justify-center gap-1">
                 {entry.nfts.length > 0 ? (

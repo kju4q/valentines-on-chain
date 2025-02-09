@@ -12,12 +12,14 @@ contract ValentineNFT is ERC721 {
     }
 
     mapping(uint256 => RelationshipMilestone[]) public tokenMilestones;
+    mapping(address => bool) public hasReceivedFirstGiftNFT;
+    mapping(address => uint256) public giftsSent;
 
     function addMilestone(
         uint256 tokenId,
         string memory milestone,
         string memory newArtwork
-    ) external {
+    ) external payable {
         RelationshipMilestone memory newMilestone = RelationshipMilestone({
             timestamp: block.timestamp,
             milestone: milestone,
@@ -26,6 +28,19 @@ contract ValentineNFT is ERC721 {
         });
 
         tokenMilestones[tokenId].push(newMilestone);
-        _updateTokenURI(tokenId); // Update NFT metadata
+        giftsSent[msg.sender] += 1;
+        emit MilestoneAdded(tokenId, msg.sender, msg.value, milestone);
+        
+        // Only mint NFT for first-time gifters
+        if (!hasReceivedFirstGiftNFT[msg.sender]) {
+            hasReceivedFirstGiftNFT[msg.sender] = true;
+            _mint(msg.sender, totalSupply() + 1);
+        }
+        
+        _updateTokenURI(tokenId);
+    }
+
+    function getGiftCount(address user) public view returns (uint256) {
+        return giftsSent[user];
     }
 } 

@@ -27,10 +27,18 @@ export const useValentineNFTs = () => {
       return;
     }
 
-    setIsLoading(true);
     try {
+      // Check if user already has a first-gift NFT
+      const hasFirstGiftNFT = await contract.call("hasReceivedFirstGiftNFT", [
+        address,
+      ]);
+      if (hasFirstGiftNFT) {
+        console.log("User already has first gift NFT");
+        return;
+      }
+
+      setIsLoading(true);
       const wallet = wallets[0];
-      // Switch to Base Sepolia
       await wallet.switchChain(84532);
 
       // Get the provider and signer
@@ -67,23 +75,13 @@ export const useValentineNFTs = () => {
         to: address,
       });
 
-      // Get the transaction hash and token ID
-      const txHash = result.receipt.transactionHash;
-      const tokenId = result.id.toString();
-
-      console.log("Mint result:", {
-        txHash,
-        tokenId,
-        receipt: result.receipt,
-      });
-
       return {
-        txHash,
-        tokenId,
+        txHash: result.receipt.transactionHash,
+        tokenId: result.id.toString(),
         receipt: result.receipt,
       };
     } catch (error) {
-      console.error("Failed to mint NFT:", error);
+      console.error("Failed to mint first gift NFT:", error);
       throw error;
     } finally {
       setIsLoading(false);
