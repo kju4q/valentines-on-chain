@@ -11,10 +11,10 @@
     "test:aibff": "ts-node src/tests/aibff.test.ts",
     "generate:bot-key": "node scripts/generate-bot-key.mjs",
     "check:balance": "node scripts/check-balance.cjs",
-    "start:bot": "node src/server/bot.ts",
     "test:twitter": "ts-node src/tests/twitter.test.ts",
     "test:tx": "NODE_ENV=production ts-node src/tests/transaction.test.ts",
-    "start:api": "node --loader ts-node/esm src/server/index.ts"
+    "start:api": "node --loader ts-node/esm src/server/index.ts",
+    "start:bot": "ts-node src/scripts/listenTweets.ts"
   },
   "dependencies": {
     "@heroicons/react": "^2.2.0",

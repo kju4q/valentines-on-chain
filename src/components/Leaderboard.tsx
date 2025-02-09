@@ -52,6 +52,7 @@ const getLoveRank = (points: number) => {
 export const Leaderboard = () => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
+  const [error, setError] = useState<string | null>(null);
   const { contract } = useContract(import.meta.env.VITE_NFT_CONTRACT_ADDRESS);
   const { user } = usePrivy();
   const { userProfile } = useUserProfile();
@@ -85,6 +86,31 @@ export const Leaderboard = () => {
   };
 
   useEffect(() => {
+    if (!import.meta.env.VITE_GIFTS_CONTRACT) {
+      setError("Demo Mode: Using mock leaderboard data");
+      // Add some mock data for demo
+      setEntries([
+        {
+          address: "0x742d...44e",
+          nickname: "0xLoveChampion",
+          points: 500,
+          rank: "Cupid",
+          nfts: [],
+          totalGifts: 5,
+        },
+        {
+          address: "0x123...abc",
+          nickname: "0xHeartBreaker",
+          points: 300,
+          rank: "Angel",
+          nfts: [],
+          totalGifts: 3,
+        },
+      ]);
+      setLoading(false);
+      return;
+    }
+
     if (!validateEnvVars()) return;
 
     const fetchLeaderboard = async () => {
@@ -219,6 +245,12 @@ export const Leaderboard = () => {
 
   return (
     <div className="space-y-6">
+      {error && (
+        <div className="text-pink-600 text-sm text-center bg-pink-50 p-2 rounded-lg">
+          {error}
+        </div>
+      )}
+
       <div className="text-center mb-8">
         <h2 className="text-2xl font-bold text-pink-600 flex items-center justify-center gap-2">
           <TrophyIcon className="w-6 h-6" />

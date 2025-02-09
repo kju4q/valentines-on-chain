@@ -32,3 +32,8 @@ typechain-types
 # Hardhat files
 cache
 artifacts
+
+# Environment files
+.env.local
+.env.*.local
+.env.test
