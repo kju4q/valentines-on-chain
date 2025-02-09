@@ -19,6 +19,9 @@
   "dependencies": {
     "@heroicons/react": "^2.2.0",
     "@privy-io/react-auth": "^2.4.0",
+    "@thirdweb-dev/chains": "^0.1.120",
+    "@thirdweb-dev/react": "^4.9.4",
+    "@thirdweb-dev/sdk": "^4.0.99",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "lucide-react": "^0.338.0",

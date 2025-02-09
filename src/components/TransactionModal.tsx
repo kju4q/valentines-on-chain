@@ -5,6 +5,9 @@ import type { GiftSuggestion } from "../services/ai/GiftAdvisor";
 import { GiftAdvisor } from "../services/ai/GiftAdvisor";
 import { LoadingButton } from "./LoadingButton";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+import { ValentineNFT } from "../services/nft/ValentineNFT";
+import { useValentineNFTs } from "../hooks/useValentineNFTs";
+import { usePrivy } from "@privy-io/react-auth";
 
 interface TransactionModalProps {
   transaction: {
@@ -16,6 +19,7 @@ interface TransactionModalProps {
 }
 
 const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
+  const { user } = usePrivy();
   const [showAI, setShowAI] = useState(false);
   const [recipient, setRecipient] = useState(transaction.recipient);
   const [amount, setAmount] = useState(transaction.amount || "");
@@ -29,6 +33,12 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
   const [aiSuggestion, setAiSuggestion] = useState("");
+  const { mintFirstGiftNFT, mintMilestoneNFT } = useValentineNFTs();
+  const [nftMinted, setNftMinted] = useState(false);
+  const [nftResult, setNftResult] = useState<{
+    txHash: string;
+    tokenId: string;
+  } | null>(null);
 
   const handleGiftSelect = (suggestion: GiftSuggestion) => {
     if (suggestion.type === "eth" || suggestion.type === "usdc") {
@@ -67,9 +77,11 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
     e.preventDefault();
     setError(null);
     setIsProcessing(true);
+    setNftMinted(false);
+    setNftResult(null);
 
-    if (!ready) {
-      setError("Please wait for wallet connection");
+    if (!ready || !user?.wallet?.address) {
+      setError("Please connect your wallet");
       setIsProcessing(false);
       return;
     }
@@ -77,9 +89,18 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
     try {
       if (transaction.type === "crypto") {
         await sendEthGift(recipient, amount);
+
+        try {
+          const result = await mintFirstGiftNFT(user?.wallet?.address || "");
+          setNftMinted(true);
+          setNftResult(result);
+        } catch (nftError) {
+          console.error("NFT minting failed:", nftError);
+        }
       } else {
         await sendSheFiGift(recipient);
       }
+
       setIsSuccess(true);
       setTimeout(onClose, 3000);
     } catch (error) {
@@ -109,6 +130,39 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
             <p className="text-pink-700/80">
               Your gift is on its way to your cutie!
             </p>
+            {nftMinted && (
+              <div className="mt-4 p-4 bg-pink-50 rounded-xl">
+                <p className="text-pink-600">
+                  🎉 Congratulations! You received a Valentine NFT!
+                </p>
+                {nftResult && (
+                  <div className="mt-2 space-y-2">
+                    <a
+                      href={`https://sepolia.basescan.org/tx/${nftResult.txHash}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-pink-500 hover:text-pink-600 underline block"
+                    >
+                      View Transaction
+                    </a>
+                    <a
+                      href={`https://testnets.opensea.io/assets/base-sepolia/${
+                        import.meta.env.VITE_NFT_CONTRACT_ADDRESS
+                      }/${nftResult.tokenId}`}
+                      target="_blank"
+                      rel="noopener noreferrer"
+                      className="text-sm text-pink-500 hover:text-pink-600 underline block"
+                    >
+                      View on OpenSea
+                    </a>
+                    <p className="text-xs text-gray-500 mt-1">
+                      Note: It may take a few minutes for the NFT to appear on
+                      OpenSea
+                    </p>
+                  </div>
+                )}
+              </div>
+            )}
           </div>
         ) : showAI ? (
           <>
