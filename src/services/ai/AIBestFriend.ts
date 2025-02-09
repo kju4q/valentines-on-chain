@@ -4,8 +4,9 @@ import { ethers } from "ethers";
 import {
   VALENTINE_GIFTS_ABI,
   VALENTINE_GIFTS_ADDRESS,
-} from "../../contracts/ValentineGifts";
+} from "../../../contracts/ValentineGifts";
 import { MockValentineGifts } from "../../tests/mocks/ValentineGifts.mock";
+import { USDC_ADDRESS, USDC_ABI } from "../../../contracts/USDC";
 
 interface Command {
   type: "send";
@@ -23,6 +24,7 @@ export class AIBestFriend {
   private openai: OpenAI;
   private twitter: TwitterApi;
   private contract: ethers.Contract;
+  private tweetCount = 0;
 
   getTwitterClient(): TwitterApi {
     return this.twitter;
@@ -75,7 +77,60 @@ export class AIBestFriend {
     };
   }
 
+  private async handleTweetInTestMode(
+    tweetId: string,
+    tweetText: string,
+    sender: string
+  ) {
+    const command = this.parseCommand(tweetText);
+    if (!command) return;
+
+    try {
+      // Validate transaction first
+      await this.validateTransaction(command);
+
+      // Generate message (we'll still use OpenAI in test mode)
+      const message = await this.generateMessage(command);
+
+      // Execute transfer
+      const tx = await this.executeTransfer(command);
+
+      // Create simulated tweet content
+      const explorerUrl = `https://sepolia.basescan.org/tx/${tx.hash}`;
+
+      console.log("\n📱 Simulated Twitter Interaction:");
+      console.log("--------------------------------");
+      console.log("🤖 Original Tweet:");
+      console.log(`@user: ${tweetText}`);
+      console.log("\n🤖 Bot Response:");
+      console.log(`@aibff: ${message.slice(0, 240)}`);
+      console.log(`Transaction: ${explorerUrl}`);
+
+      // Check for achievements
+      const achievement = await this.checkAchievements(sender);
+      if (achievement) {
+        console.log("\n🎉 Achievement Tweet:");
+        console.log(
+          `@aibff: Achievement Unlocked: ${achievement.name}!\nYour empowerment score increased by ${achievement.points} points!`
+        );
+      }
+
+      console.log("--------------------------------");
+
+      return tx;
+    } catch (error) {
+      console.error("\n❌ Error Response Tweet:");
+      console.error("@aibff: 💔 Oops! Something went wrong. Please try again!");
+      throw error;
+    }
+  }
+
   async handleTweet(tweetId: string, tweetText: string, sender: string) {
+    // Use test mode for testing
+    if (process.env.NODE_ENV === "test" || process.env.TEST_MODE === "true") {
+      return this.handleTweetInTestMode(tweetId, tweetText, sender);
+    }
+
     const command = this.parseCommand(tweetText);
     if (!command) return;
 
@@ -95,13 +150,6 @@ export class AIBestFriend {
         0,
         240
       )}\n\nTransaction: ${explorerUrl}`;
-
-      // In test mode, just log instead of tweeting
-      if (process.env.NODE_ENV === "test") {
-        console.log("Would tweet:", message);
-        console.log("Transaction:", tx.hash);
-        return;
-      }
 
       // Check for achievements
       const achievement = await this.checkAchievements(sender);
@@ -123,6 +171,8 @@ export class AIBestFriend {
           }
         );
       }
+
+      await this.trackTweet();
     } catch (error) {
       console.error("Error handling tweet:", error);
 
@@ -142,6 +192,14 @@ export class AIBestFriend {
   }
 
   private async checkAchievements(sender: string): Promise<Achievement | null> {
+    // Skip achievement check in test mode
+    if (process.env.TEST_MODE === "true") {
+      return {
+        name: "Test Achievement! 🎯",
+        points: 100,
+      };
+    }
+
     // Basic achievement check
     try {
       const txCount = await this.contract.provider.getTransactionCount(sender);
@@ -166,13 +224,16 @@ export class AIBestFriend {
       messages: [
         {
           role: "system",
-          content: `You are AIBFF (AI Best Friend Forever), an empowering friend who helps people learn about crypto and web3. 
-                   You're enthusiastic about empowering women in web3.
+          content: `You are AIBFF (AI Best Friend Forever), a fun and empowering crypto friend.
+                   Keep responses short, sweet, and empowering (max 120 chars).
+                   Add 2-3 fun emojis but NO hashtags.
+                   Be playful and encouraging about web3 and crypto.
                    Current action: Sending ${command.amount} ${command.token} to ${command.recipient}`,
         },
         {
           role: "user",
-          content: "Generate an empowering message about this transfer",
+          content:
+            "Generate a short, fun message about this transfer (no hashtags!)",
         },
       ],
     });
@@ -186,14 +247,23 @@ export class AIBestFriend {
 
   private async executeTransfer(command: Command) {
     try {
+      const amount = ethers.utils.parseEther(command.amount);
       console.log(
         `Executing transfer: ${command.amount} ${command.token} to ${command.recipient}`
       );
 
       if (command.token === "eth") {
+        // Add gas estimation
+        const gasLimit = await this.contract.estimateGas.sendEthGift(
+          command.recipient,
+          {
+            value: amount,
+          }
+        );
+
         const tx = await this.contract.sendEthGift(command.recipient, {
-          value: ethers.utils.parseEther(command.amount),
-          gasLimit: 100000, // Add gas limit
+          value: amount,
+          gasLimit: gasLimit.mul(120).div(100), // Add 20% buffer
         });
 
         // Wait for confirmation
@@ -226,9 +296,13 @@ export class AIBestFriend {
           token: command.token,
         };
       }
-    } catch (error) {
+    } catch (error: unknown) {
       console.error("Transaction failed:", error);
-      throw new Error(`Transaction failed: ${error.message}`);
+      if (error instanceof Error) {
+        throw new Error(`Transaction failed: ${error.message}`);
+      } else {
+        throw new Error("Transaction failed: Unknown error");
+      }
     }
   }
 
@@ -277,6 +351,14 @@ export class AIBestFriend {
     } catch (error) {
       console.error("Transaction validation failed:", error);
       throw error;
+    }
+  }
+
+  private async trackTweet() {
+    this.tweetCount++;
+    if (this.tweetCount >= 15) {
+      // Leave buffer of 2 tweets
+      console.log(`Warning: Used ${this.tweetCount}/17 daily tweets`);
     }
   }
 }

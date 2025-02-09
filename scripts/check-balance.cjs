@@ -1,16 +1,25 @@
-const { ethers } = require("hardhat");
+const { ethers } = require("ethers");
+require("dotenv").config();
 
-async function main() {
-  const [signer] = await ethers.getSigners();
-  const balance = await signer.getBalance();
+const VALENTINE_GIFTS_ADDRESS = "0x3EE70cFc42108714AA6aC6BA4f9b38c22D19744c";
 
-  console.log("Account:", signer.address);
-  console.log("Balance:", ethers.utils.formatEther(balance), "ETH");
+async function checkBalance() {
+  const provider = new ethers.providers.JsonRpcProvider(
+    "https://sepolia.base.org"
+  );
+
+  // Get contract balance
+  const balance = await provider.getBalance(VALENTINE_GIFTS_ADDRESS);
+  console.log("Contract Balance:", ethers.utils.formatEther(balance), "ETH");
+
+  // Get bot wallet balance
+  const wallet = new ethers.Wallet(process.env.BOT_PRIVATE_KEY, provider);
+  const botBalance = await wallet.getBalance();
+  console.log(
+    "Bot Wallet Balance:",
+    ethers.utils.formatEther(botBalance),
+    "ETH"
+  );
 }
 
-main()
-  .then(() => process.exit(0))
-  .catch((error) => {
-    console.error(error);
-    process.exit(1);
-  });
+checkBalance().catch(console.error);

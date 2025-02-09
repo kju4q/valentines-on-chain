@@ -12,7 +12,8 @@
     "generate:bot-key": "node scripts/generate-bot-key.mjs",
     "check:balance": "node scripts/check-balance.cjs",
     "start:bot": "node src/server/bot.ts",
-    "test:twitter": "ts-node src/tests/twitter.test.ts"
+    "test:twitter": "ts-node src/tests/twitter.test.ts",
+    "test:tx": "NODE_ENV=production ts-node src/tests/transaction.test.ts"
   },
   "dependencies": {
     "@privy-io/react-auth": "^2.4.0",
