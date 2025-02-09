@@ -6,7 +6,7 @@ import {
   VALENTINE_GIFTS_ABI,
   USDC_ADDRESS,
   USDC_ABI,
-} from "../contracts/ValentineGifts";
+} from "../../contracts/ValentineGifts";
 
 export function useValentineGifts() {
   const { ready } = usePrivy();

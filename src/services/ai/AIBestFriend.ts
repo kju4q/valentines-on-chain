@@ -224,25 +224,20 @@ export class AIBestFriend {
       messages: [
         {
           role: "system",
-          content: `You are AIBFF (AI Best Friend Forever), a fun and empowering crypto friend.
-                   Keep responses short, sweet, and empowering (max 120 chars).
-                   Add 2-3 fun emojis but NO hashtags.
-                   Be playful and encouraging about web3 and crypto.
+          content: `You are AIBFF (AI Best Friend Forever)—a witty, supportive companion who uses memes, Gen-Z slang, and playful tough love to onboard users into crypto.
+                   Celebrate their wins, explain transactions in simple terms, and roast excuses (gently). Never flirt.
+                   Keep responses short (max 120 chars). Add 2-3 fun emojis but NO hashtags.
+                   Example: "Roses are red, ETH is blue, let's grow that portfolio 💅"
                    Current action: Sending ${command.amount} ${command.token} to ${command.recipient}`,
         },
         {
           role: "user",
-          content:
-            "Generate a short, fun message about this transfer (no hashtags!)",
+          content: "Generate a fun, Gen-Z style message about this transfer",
         },
       ],
     });
 
-    const content = completion.choices[0].message.content;
-    if (!content) {
-      throw new Error("Failed to generate message");
-    }
-    return content;
+    return completion.choices[0].message.content || "";
   }
 
   private async executeTransfer(command: Command) {

@@ -13,10 +13,14 @@
     "check:balance": "node scripts/check-balance.cjs",
     "start:bot": "node src/server/bot.ts",
     "test:twitter": "ts-node src/tests/twitter.test.ts",
-    "test:tx": "NODE_ENV=production ts-node src/tests/transaction.test.ts"
+    "test:tx": "NODE_ENV=production ts-node src/tests/transaction.test.ts",
+    "start:api": "node --loader ts-node/esm src/server/index.ts"
   },
   "dependencies": {
+    "@heroicons/react": "^2.2.0",
     "@privy-io/react-auth": "^2.4.0",
+    "cors": "^2.8.5",
+    "express": "^4.21.2",
     "lucide-react": "^0.338.0",
     "openai": "^4.83.0",
     "react": "^18.2.0",
@@ -26,6 +30,8 @@
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",
     "@openzeppelin/contracts": "^5.2.0",
+    "@types/cors": "^2.8.17",
+    "@types/express": "^5.0.0",
     "@types/node": "^22.13.1",
     "@types/react": "^18.2.55",
     "@types/react-dom": "^18.2.19",

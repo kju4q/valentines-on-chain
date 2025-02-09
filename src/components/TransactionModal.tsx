@@ -3,6 +3,8 @@ import { useValentineGifts } from "../hooks/useValentineGifts";
 import { AIGiftCreator } from "./AIGiftCreator";
 import type { GiftSuggestion } from "../services/ai/GiftAdvisor";
 import { GiftAdvisor } from "../services/ai/GiftAdvisor";
+import { LoadingButton } from "./LoadingButton";
+import { ArrowLeftIcon } from "@heroicons/react/24/outline";
 
 interface TransactionModalProps {
   transaction: {
@@ -23,11 +25,16 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
   const [message, setMessage] = useState("");
+  const [suggestion, setSuggestion] = useState<GiftSuggestion | null>(null);
+  const [loading, setLoading] = useState(false);
+  const [aiLoading, setAiLoading] = useState(false);
+  const [aiSuggestion, setAiSuggestion] = useState("");
 
   const handleGiftSelect = (suggestion: GiftSuggestion) => {
     if (suggestion.type === "eth" || suggestion.type === "usdc") {
       setAmount(suggestion.amount);
     }
+    setSuggestion(suggestion);
     setShowAI(false);
   };
 
@@ -35,16 +42,25 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
     try {
       const advisor = new GiftAdvisor(import.meta.env.VITE_OPENAI_API_KEY);
 
+      setLoading(true);
       const suggestion = await advisor.suggestGift(
         "Suggest a romantic Valentine's gift with a sweet message"
       );
 
       setAmount(suggestion.amount);
       setMessage(suggestion.message);
+      setSuggestion(suggestion);
       // Show success feedback with suggestion.emoji
     } catch (error) {
       setError("Cupid is taking a break, try again!");
+    } finally {
+      setLoading(false);
     }
+  };
+
+  const handleAIStateChange = (loading: boolean, suggestion: string) => {
+    setAiLoading(loading);
+    setAiSuggestion(suggestion);
   };
 
   const handleSubmit = async (e: React.FormEvent) => {
@@ -97,19 +113,25 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
         ) : showAI ? (
           <>
             <div className="flex justify-between items-center mb-6">
-              <h2 className="text-2xl font-bold text-pink-600">
-                AI Gift Suggestions
-              </h2>
+              {!aiLoading && !aiSuggestion && (
+                <h2 className="text-2xl font-bold text-pink-600">
+                  AI Gift Suggestions
+                </h2>
+              )}
               <button
                 onClick={() => setShowAI(false)}
-                className="text-gray-500 hover:text-gray-700"
+                className={`text-pink-500 hover:text-pink-600 transition-colors ${
+                  !aiLoading && !aiSuggestion ? "" : "ml-auto"
+                }`}
+                aria-label="Back"
               >
-                ← Back
+                <ArrowLeftIcon className="w-6 h-6" />
               </button>
             </div>
             <AIGiftCreator
               onGiftSelect={handleGiftSelect}
               onSuggestion={getAISuggestion}
+              onStateChange={handleAIStateChange}
             />
           </>
         ) : (
@@ -126,7 +148,7 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
                   onClick={() => setShowAI(true)}
                   className="text-sm text-pink-500 hover:text-pink-600"
                 >
-                  Ask Cupid for Ideas ��
+                  Ask Cupid for Ideas
                 </button>
               )}
             </div>
@@ -176,13 +198,9 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
                 >
                   Cancel
                 </button>
-                <button
-                  type="submit"
-                  className="flex-1 px-6 py-3 bg-pink-500 hover:bg-pink-600 text-white rounded-full font-semibold transition-all duration-300 disabled:opacity-50 disabled:cursor-not-allowed"
-                  disabled={isButtonDisabled}
-                >
+                <LoadingButton onClick={handleSubmit} loading={isLoading}>
                   {buttonText}
-                </button>
+                </LoadingButton>
               </div>
             </div>
           </form>

@@ -3,6 +3,10 @@ import { useState } from "react";
 import HeartLoader from "./HeartLoader";
 import GiftCard from "./GiftCard";
 import TransactionModal from "./TransactionModal";
+import {
+  CurrencyDollarIcon,
+  AcademicCapIcon,
+} from "@heroicons/react/24/outline";
 
 interface Transaction {
   type: "crypto" | "shefi";
@@ -66,16 +70,17 @@ const MainPage = () => {
             <GiftCard
               title="Send Crypto Love"
               description="Send ETH or USDC to your Valentine"
-              icon="💝"
+              icon={<CurrencyDollarIcon className="w-8 h-8 text-pink-500" />}
               buttonText="Send Crypto"
               onClick={() => handleTransaction("crypto", "")}
             />
             <GiftCard
               title="Gift SheFi Course"
               description="Gift the SheFi course to empower your Valentine"
-              icon="📚"
+              icon={<AcademicCapIcon className="w-8 h-8 text-purple-500" />}
               buttonText="Gift Course ($700)"
               amount="700"
+              isComingSoon
               onClick={() => handleTransaction("shefi", "", "700")}
             />
           </div>

@@ -21,7 +21,7 @@
     "noUnusedParameters": false,
     "noFallthroughCasesInSwitch": true
   },
-  "include": ["src"],
+  "include": ["src", "contracts/USDC.ts", "contracts/ValentineGifts.ts"],
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
