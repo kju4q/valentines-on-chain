@@ -22,13 +22,16 @@
     "@thirdweb-dev/chains": "^0.1.120",
     "@thirdweb-dev/react": "^4.9.4",
     "@thirdweb-dev/sdk": "^4.0.99",
+    "axios": "^1.7.9",
+    "cookie": "^1.0.2",
     "cors": "^2.8.5",
     "express": "^4.21.2",
     "lucide-react": "^0.338.0",
     "openai": "^4.83.0",
     "react": "^18.2.0",
     "react-dom": "^18.2.0",
-    "twitter-api-v2": "^1.19.1"
+    "twitter-api-v2": "^1.19.1",
+    "ws": "^8.18.0"
   },
   "devDependencies": {
     "@nomiclabs/hardhat-ethers": "^2.2.3",
