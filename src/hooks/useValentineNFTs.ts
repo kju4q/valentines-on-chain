@@ -12,6 +12,8 @@ declare global {
   }
 }
 
+// TODO: User should get Valentine NFT only the first gift
+
 export const useValentineNFTs = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = usePrivy();
