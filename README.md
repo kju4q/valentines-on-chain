@@ -101,7 +101,7 @@ cp .env.example .env
 
 ```env
 VITE_PRIVY_APP_ID=demo-privy-app-id-123
-VITE_NFT_CONTRACT_ADDRESS=0x4cba8bc2efb78f59b991d612b71b00c2803e31ca
+VITE_NFT_CONTRACT_ADDRESS=0x4...23
 # ... (other demo values)
 ```
 
