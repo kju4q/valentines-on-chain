@@ -63,5 +63,8 @@
   "bugs": {
     "url": "https://github.com/kju4q/valentines-on-chain/issues"
   },
-  "homepage": "https://github.com/kju4q/valentines-on-chain#readme"
+  "homepage": "https://github.com/kju4q/valentines-on-chain#readme",
+  "overrides": {
+    "@coinbase/wallet-sdk": "4.3.0"
+  }
 }
