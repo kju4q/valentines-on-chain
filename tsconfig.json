@@ -6,9 +6,10 @@
     "module": "ESNext",
     "skipLibCheck": true,
     "esModuleInterop": true,
+    "types": ["vite/client", "@privy-io/server-auth"],
 
-    /* Bundler mode */
-    "moduleResolution": "bundler",
+    /* Module Resolution */
+    "moduleResolution": "Bundler",
     "allowImportingTsExtensions": true,
     "resolveJsonModule": true,
     "isolatedModules": true,
@@ -19,12 +20,16 @@
     "strict": true,
     "noUnusedLocals": false,
     "noUnusedParameters": false,
-    "noFallthroughCasesInSwitch": true
+    "noFallthroughCasesInSwitch": true,
+
+    "baseUrl": ".",
+    "paths": {
+      "@/*": ["./src/*"]
+    }
   },
   "include": ["src", "contracts/USDC.ts", "contracts/ValentineGifts.ts"],
   "ts-node": {
     "esm": true,
     "experimentalSpecifierResolution": "node"
-  },
-  "references": [{ "path": "./tsconfig.node.json" }]
+  }
 }

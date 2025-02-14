@@ -1,255 +1,159 @@
-import { TwitterApi } from "twitter-api-v2";
-import { CommandParser } from "../ai/CommandParser";
-import { TransactionService } from "../transactions/TransactionService";
-import { ethers } from "ethers";
+import {
+  TwitterApi,
+  TwitterApiReadWrite,
+  TweetV2,
+  ApiResponseError,
+} from "twitter-api-v2";
 import OpenAI from "openai";
+import { generateDeeplink } from "../../utils/deeplink";
+import { GiftAdvisor } from "../ai/GiftAdvisor";
+
+interface ParsedCommand {
+  amount: string;
+  token: "ETH" | "USDC";
+  recipient: string;
+}
+
+interface TweetData {
+  id: string;
+  text: string;
+}
 
 export class TwitterHandler {
-  private twitter: TwitterApi;
-  private appOnlyClient?: TwitterApi;
-  private commandParser: CommandParser;
-  private transactionService?: TransactionService;
-  private openai: OpenAI;
-  private testMode: boolean;
+  #client: TwitterApiReadWrite;
+  #giftAdvisor: GiftAdvisor;
+  #lastProcessedId: string | undefined;
+  #isProcessing: boolean = false;
 
-  constructor(
-    twitterApiKey: string,
-    twitterApiSecret: string,
-    twitterAccessToken: string,
-    twitterAccessSecret: string,
-    testMode = false
-  ) {
-    this.testMode = testMode;
+  constructor() {
+    // Initialize with OAuth 1.0a
+    this.#client = new TwitterApi({
+      appKey: process.env.TWITTER_API_KEY || "",
+      appSecret: process.env.TWITTER_API_SECRET || "",
+      accessToken: process.env.TWITTER_ACCESS_TOKEN || "",
+      accessSecret: process.env.TWITTER_ACCESS_SECRET || "",
+    }).readWrite;
 
-    // OAuth 1.0a client for tweeting
-    this.twitter = new TwitterApi({
-      appKey: twitterApiKey,
-      appSecret: twitterApiSecret,
-      accessToken: twitterAccessToken,
-      accessSecret: twitterAccessSecret,
-    });
-
-    this.commandParser = new CommandParser();
-    this.openai = new OpenAI({
-      apiKey: process.env.VITE_OPENAI_API_KEY,
-    });
+    this.#giftAdvisor = new GiftAdvisor();
   }
 
-  initTransactionService(signer: ethers.Signer) {
-    this.transactionService = new TransactionService(signer, "");
-  }
-
-  // Initialize app-only client
-  async initAppClient(
-    apiKey: string,
-    apiSecret: string,
-    clientId: string,
-    clientSecret: string
-  ): Promise<void> {
+  public async startListening(): Promise<void> {
+    console.log("Starting Twitter bot...");
     try {
-      // Create app-only client with API key and secret
-      const client = new TwitterApi({
-        appKey: apiKey,
-        appSecret: apiSecret,
+      // Initial check with error handling
+      await this.checkMentions(true);
+
+      console.log(
+        "Twitter bot is now ready! Checking mentions every 15 minutes..."
+      );
+
+      // Poll for new mentions with increased interval
+      setInterval(async () => {
+        if (!this.#isProcessing) {
+          await this.checkMentions(false);
+        }
+      }, 900000); // Check every 15 minutes (900000ms)
+    } catch (error) {
+      console.error("Failed to start Twitter bot:", error);
+      // Attempt to reconnect after a longer delay
+      setTimeout(() => this.startListening(), 60000); // 1 minute delay
+    }
+  }
+
+  private async checkMentions(isInitial: boolean): Promise<void> {
+    try {
+      this.#isProcessing = true;
+      // Add delay before making the API call
+      await new Promise((resolve) => setTimeout(resolve, 5000));
+
+      const mentions = await this.#client.v2.search("@aibff", {
+        ...(this.#lastProcessedId && !isInitial
+          ? { since_id: this.#lastProcessedId }
+          : {}),
+        "tweet.fields": ["created_at"],
+        max_results: 10, // Must be at least 10
       });
 
-      // Get app-only client
-      this.appOnlyClient = await client.appLogin();
+      const tweets = mentions.tweets;
 
-      console.log("✅ App-only client initialized");
-    } catch (error) {
-      console.error("❌ Failed to initialize app-only client:", error);
-      throw error;
-    }
-  }
+      if (tweets && tweets.length > 0) {
+        // Update last processed ID
+        this.#lastProcessedId = tweets[0].id;
 
-  private async generateValentineMessage(
-    amount: string,
-    recipient: string
-  ): Promise<string> {
-    try {
-      const prompt = `Generate a short, fun Valentine's crypto message about sending ${amount} ETH to ${recipient} on Base blockchain.
-The message should:
-- Be 3 lines max
-- Include emojis
-- Mention Base
-- Have a playful web3/crypto vibe
-- Include "just vibes" somewhere
-- Be romantic but modern
-
-Example format:
-🌹 Based Valentine's moment
-💝 0.1 ETH sent with love to 0xabc...
-just vibes on Base`;
-
-      const completion = await this.openai.chat.completions.create({
-        model: "gpt-3.5-turbo",
-        messages: [{ role: "user", content: prompt }],
-        max_tokens: 100,
-        temperature: 0.7,
-      });
-
-      return completion.choices[0].message.content || "";
-    } catch (error) {
-      console.error("AI generation failed:", error);
-      return `
-🌹 Based Valentine's moment
-💝 ${amount} ETH sent with love to ${recipient}...
-just vibes on Base`;
-    }
-  }
-
-  private async postTweetWithRetry(
-    message: string,
-    maxRetries = 3
-  ): Promise<void> {
-    if (this.testMode) {
-      console.log("🧪 Test mode: Would tweet:", message);
-      return;
-    }
-    for (let i = 0; i < maxRetries; i++) {
-      try {
-        await this.twitter.v2.tweet(message);
-        console.log("✅ Reply tweet sent:", message);
-        return;
-      } catch (error: any) {
-        if (error?.code === 429) {
-          // Rate limit error
-          const resetTime = error?.rateLimit?.reset;
-          if (resetTime) {
-            const waitTime = (resetTime - Math.floor(Date.now() / 1000)) * 1000;
-            console.log(
-              `⏳ Rate limited, waiting ${Math.ceil(waitTime / 1000)}s...`
-            );
-            await new Promise((resolve) =>
-              setTimeout(resolve, waitTime + 1000)
-            );
-            continue;
+        // Process mentions in reverse order (oldest first)
+        const tweetsToProcess = [...tweets].reverse();
+        for (const tweet of tweetsToProcess) {
+          try {
+            await this.handleTweet(tweet);
+            // Add delay between processing tweets
+            await new Promise((resolve) => setTimeout(resolve, 2000));
+          } catch (error) {
+            console.error(`Error processing tweet ${tweet.id}:`, error);
           }
         }
-        throw error;
       }
-    }
-    throw new Error(`Failed to post tweet after ${maxRetries} retries`);
-  }
-
-  async handleTweet(tweet: string) {
-    console.log("\n🔍 Parsing tweet:", tweet);
-    const command = await this.commandParser.parseCommand(tweet);
-
-    if (!command) {
-      console.log("❌ No valid command found in tweet");
-      return;
-    }
-
-    if (!this.transactionService) {
-      console.error("❌ Transaction service not initialized");
-      return;
-    }
-
-    console.log("💰 Processing transaction:", command);
-    let replyMessage: string = ""; // Initialize with empty string
-
-    try {
-      const tx = await this.transactionService.sendToken(
-        command.recipient,
-        command.amount,
-        command.token
-      );
-      console.log("✅ Transaction sent:", tx.hash);
-
-      await this.transactionService.waitForTransaction(tx);
-
-      replyMessage = await this.generateValentineMessage(
-        command.amount.toString(),
-        command.recipient.slice(0, 6)
-      );
-
-      // Try to post tweet with retry logic
-      await this.postTweetWithRetry(replyMessage);
     } catch (error) {
-      if ((error as any)?.code === 429 && replyMessage) {
-        // Check if replyMessage exists and is not empty
-        console.log("⚠️ Tweet rate limited, but transaction was successful!");
-        console.log("💝 Generated message:", replyMessage);
+      if (error instanceof ApiResponseError) {
+        if (error.code === 429) {
+          console.log("Rate limit reached. Will retry in 15 minutes.");
+        } else {
+          console.error("Twitter API error:", error.data);
+        }
       } else {
-        console.error("❌ Error:", error);
+        console.error("Error checking mentions:", error);
       }
+    } finally {
+      this.#isProcessing = false;
     }
   }
 
-  async pollTweets(): Promise<void> {
-    if (!this.appOnlyClient) {
-      throw new Error("App-only client not initialized");
-    }
-
-    console.log("🔍 Starting to poll for tweets...");
-
-    let lastCheckedId: string | undefined;
-
-    // Poll every 60 seconds
-    setInterval(async () => {
-      try {
-        // Use mentions timeline instead of search
-        const tweets = await this.twitter.v2.userMentionTimeline(
-          "1887217973372530688", // Your bot's user ID
-          {
-            since_id: lastCheckedId,
-            "tweet.fields": ["author_id", "created_at", "id"],
-            max_results: 5,
-          }
-        );
-
-        if (tweets.data && Array.isArray(tweets.data)) {
-          // Update last checked ID
-          if (tweets.data.length > 0) {
-            lastCheckedId = tweets.data[0].id;
-          }
-
-          for (const tweet of tweets.data) {
-            if (tweet && tweet.text) {
-              console.log("\n📥 Found tweet:", tweet.text);
-              await this.handleTweet(tweet.text);
-            }
-          }
-        }
-      } catch (error: any) {
-        if (error?.code === 429) {
-          const resetTime = error?.rateLimit?.reset;
-          if (resetTime) {
-            const waitTime = (resetTime - Math.floor(Date.now() / 1000)) * 1000;
-            console.log(
-              `⏳ Rate limited, waiting ${Math.ceil(
-                waitTime / 1000
-              )}s before next poll...`
-            );
-            return;
-          }
-        }
-        console.error("❌ Poll error:", error);
-      }
-    }, 60000);
-
-    console.log("🤖 Bot is running! Press Ctrl+C to stop.");
-  }
-
-  public async searchAndProcessTweets(): Promise<void> {
+  private async handleTweet(tweet: TweetV2): Promise<void> {
     try {
-      const tweets = await this.twitter.v2.search("@0xaibff", {
-        "tweet.fields": ["author_id", "conversation_id", "created_at", "id"],
-        max_results: 10,
+      const command = this.parseCommand(tweet.text);
+      if (!command) {
+        await this.#client.v2.reply(
+          "💫 Hey! Try this format: @aibff send 0.01 ETH to @username",
+          tweet.id
+        );
+        return;
+      }
+
+      const aiMessage = await this.#giftAdvisor.generateMessage({
+        amount: Number(command.amount),
+        token: command.token,
+        recipient: command.recipient,
       });
 
-      if (tweets.data && Array.isArray(tweets.data)) {
-        for (const tweet of tweets.data) {
-          if (tweet && tweet.text) {
-            console.log("\n📥 Found tweet:", tweet.text);
-            await this.handleTweet(tweet.text);
-          }
-        }
-      }
+      const giftLink = generateDeeplink({
+        amount: command.amount,
+        token: command.token,
+        recipient: command.recipient,
+        message: aiMessage,
+      });
+
+      await this.#client.v2.reply(
+        `💝 Here's your Valentine's gift link for @${command.recipient}:\n\n${giftLink}\n\n${aiMessage}`,
+        tweet.id
+      );
     } catch (error) {
-      console.error("❌ Error checking tweets:", error);
+      console.error("Error handling tweet:", error);
+      await this.#client.v2.reply(
+        "💔 Oops! Something went wrong. Please try again!",
+        tweet.id
+      );
     }
+  }
+
+  private parseCommand(text: string): ParsedCommand | null {
+    // Match any tweet that contains our bot mention, an amount, ETH/USDC, and a username
+    const regex =
+      /(?:^|\s)@aibff(?:\s+\w+)*\s+send\s+(\d+(?:\.\d+)?)\s*(ETH|USDC)(?:\s+\w+)*\s+to\s+@?(\w+)/i;
+    const match = text.match(regex);
+    if (!match) return null;
+    return {
+      amount: match[1],
+      token: match[2].toUpperCase() as "ETH" | "USDC",
+      recipient: match[3].replace("@", ""),
+    };
   }
 }
