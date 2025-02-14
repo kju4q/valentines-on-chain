@@ -7,10 +7,7 @@ interface SuggestionRequest {
 
 const router = Router();
 
-const handleSuggestion = async (
-  req: Request<{}, any, SuggestionRequest>,
-  res: Response
-): Promise<void> => {
+const handleSuggestion = async (req: Request, res: Response): Promise<void> => {
   if (!process.env.VITE_OPENAI_API_KEY) {
     res.status(500).json({ error: "OpenAI API key not configured" });
     return;

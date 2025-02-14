@@ -1,18 +1,15 @@
 import { usePrivy } from "@privy-io/react-auth";
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import HeartLoader from "./HeartLoader";
 import GiftCard from "./GiftCard";
-import TransactionModal from "./TransactionModal";
+import { TransactionModal } from "../components/TransactionModal";
 import {
   CurrencyDollarIcon,
   AcademicCapIcon,
   TrophyIcon,
   GiftIcon,
 } from "@heroicons/react/24/outline";
-import { AIGiftCreator } from "./AIGiftCreator";
-import { GiftNFT } from "./GiftNFT";
 import { Leaderboard } from "./Leaderboard";
-import { SendGift } from "./SendGift";
 import { useUserProfile } from "../contexts/UserProfileContext";
 
 interface Transaction {
@@ -49,6 +46,20 @@ const MainPage = () => {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("gifts");
   const { userProfile } = useUserProfile();
+
+  useEffect(() => {
+    if (user?.twitter?.username) {
+      // Send Twitter handle and Privy ID to backend
+      fetch("/api/link-twitter", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          twitterHandle: user.twitter.username,
+          privyId: user.id,
+        }),
+      });
+    }
+  }, [user]);
 
   const handleLogout = async () => {
     setIsLoading(true);

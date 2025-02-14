@@ -1,34 +1,39 @@
-import React, { useState } from "react";
+import React, { useState, useEffect } from "react";
 import { useValentineGifts } from "../hooks/useValentineGifts";
 import { AIGiftCreator } from "./AIGiftCreator";
 import type { GiftSuggestion } from "../services/ai/GiftAdvisor";
 import { GiftAdvisor } from "../services/ai/GiftAdvisor";
 import { LoadingButton } from "./LoadingButton";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
-import { ValentineNFT } from "../services/nft/ValentineNFT";
 import { useValentineNFTs } from "../hooks/useValentineNFTs";
 import { usePrivy } from "@privy-io/react-auth";
 
 interface TransactionModalProps {
-  transaction: {
-    type: "crypto" | "shefi";
-    amount?: string;
-    recipient: string;
-  };
+  show: boolean;
   onClose: () => void;
+  defaultValues?: {
+    amount: string;
+    token: string;
+    recipient: string;
+    message: string;
+  };
 }
 
-const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
+export function TransactionModal({
+  show,
+  onClose,
+  defaultValues,
+}: TransactionModalProps) {
   const { user } = usePrivy();
   const [showAI, setShowAI] = useState(false);
-  const [recipient, setRecipient] = useState(transaction.recipient);
-  const [amount, setAmount] = useState(transaction.amount || "");
+  const [recipient, setRecipient] = useState(defaultValues?.recipient || "");
+  const [amount, setAmount] = useState(defaultValues?.amount || "");
   const { sendEthGift, sendUsdcGift, sendSheFiGift, isLoading, ready } =
     useValentineGifts();
   const [isSuccess, setIsSuccess] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [isProcessing, setIsProcessing] = useState(false);
-  const [message, setMessage] = useState("");
+  const [message, setMessage] = useState(defaultValues?.message || "");
   const [suggestion, setSuggestion] = useState<GiftSuggestion | null>(null);
   const [loading, setLoading] = useState(false);
   const [aiLoading, setAiLoading] = useState(false);
@@ -40,6 +45,18 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
     tokenId: string;
   } | null>(null);
 
+  useEffect(() => {
+    // Pre-fill values if coming from deep link
+    if (defaultValues) {
+      setAmount(defaultValues.amount);
+      setRecipient(defaultValues.recipient);
+      setMessage(defaultValues.message);
+
+      // Log the values to verify they're being set
+      console.log("Setting default values:", defaultValues);
+    }
+  }, [defaultValues]);
+
   const handleGiftSelect = (suggestion: GiftSuggestion) => {
     if (suggestion.type === "eth" || suggestion.type === "usdc") {
       setAmount(suggestion.amount);
@@ -50,7 +67,7 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
 
   const getAISuggestion = async () => {
     try {
-      const advisor = new GiftAdvisor(import.meta.env.VITE_OPENAI_API_KEY);
+      const advisor = new GiftAdvisor(process.env.VITE_OPENAI_API_KEY);
 
       setLoading(true);
       const suggestion = await advisor.suggestGift(
@@ -87,7 +104,7 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
     }
 
     try {
-      if (transaction.type === "crypto") {
+      if (defaultValues?.token === "eth" || defaultValues?.token === "usdc") {
         await sendEthGift(recipient, amount);
 
         try {
@@ -192,19 +209,21 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
           <form onSubmit={handleSubmit}>
             <div className="flex justify-between items-center mb-6">
               <h2 className="text-2xl font-bold text-pink-600">
-                {transaction.type === "crypto"
+                {defaultValues?.token === "eth" ||
+                defaultValues?.token === "usdc"
                   ? "Send Crypto Love"
                   : "Gift SheFi Course"}
               </h2>
-              {transaction.type === "crypto" && (
-                <button
-                  type="button"
-                  onClick={() => setShowAI(true)}
-                  className="text-sm text-pink-500 hover:text-pink-600"
-                >
-                  Ask Cupid for Ideas
-                </button>
-              )}
+              {defaultValues?.token === "eth" ||
+                (defaultValues?.token === "usdc" && (
+                  <button
+                    type="button"
+                    onClick={() => setShowAI(true)}
+                    className="text-sm text-pink-500 hover:text-pink-600"
+                  >
+                    Ask Cupid for Ideas
+                  </button>
+                ))}
             </div>
             <div className="space-y-4">
               <div>
@@ -221,23 +240,24 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
                   disabled={isButtonDisabled}
                 />
               </div>
-              {transaction.type === "crypto" && (
-                <div>
-                  <label className="block text-sm font-medium text-pink-600 mb-1">
-                    Amount (ETH)
-                  </label>
-                  <input
-                    type="number"
-                    step="0.001"
-                    value={amount}
-                    onChange={(e) => setAmount(e.target.value)}
-                    className="w-full px-4 py-2 rounded-lg border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
-                    placeholder="0.0"
-                    required
-                    disabled={isButtonDisabled}
-                  />
-                </div>
-              )}
+              {defaultValues?.token === "eth" ||
+                (defaultValues?.token === "usdc" && (
+                  <div>
+                    <label className="block text-sm font-medium text-pink-600 mb-1">
+                      Amount ({defaultValues.token})
+                    </label>
+                    <input
+                      type="number"
+                      step="0.001"
+                      value={amount}
+                      onChange={(e) => setAmount(e.target.value)}
+                      className="w-full px-4 py-2 rounded-lg border border-pink-200 focus:outline-none focus:ring-2 focus:ring-pink-500"
+                      placeholder="0.0"
+                      required
+                      disabled={isButtonDisabled}
+                    />
+                  </div>
+                ))}
               {error && (
                 <div className="text-red-500 text-sm mt-2 text-center">
                   {error}
@@ -259,9 +279,13 @@ const TransactionModal = ({ transaction, onClose }: TransactionModalProps) => {
             </div>
           </form>
         )}
+        {/* Add indicator if coming from Twitter */}
+        {defaultValues && (
+          <div className="text-sm text-gray-500 mt-2">
+            💝 Gift initiated from Twitter
+          </div>
+        )}
       </div>
     </div>
   );
-};
-
-export default TransactionModal;
+}
