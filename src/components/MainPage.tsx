@@ -99,8 +99,14 @@ const MainPage = () => {
       {isLoading && <HeartLoader />}
       {showModal && transaction && (
         <TransactionModal
-          transaction={transaction}
+          show={showModal}
           onClose={() => setShowModal(false)}
+          defaultValues={{
+            amount: transaction.amount || "",
+            token: transaction.type === "crypto" ? "eth" : "shefi",
+            recipient: transaction.recipient,
+            message: "", // Add empty message by default
+          }}
         />
       )}
       <div className="min-h-screen bg-gradient-to-br from-pink-100 via-pink-200 to-pink-300 p-8">
@@ -166,7 +172,11 @@ const MainPage = () => {
                 buttonText="Gift Course ($700)"
                 amount="700"
                 isComingSoon
-                onClick={() => handleTransaction("shefi", "", "700")}
+                onClick={() => {
+                  // Don't open modal if coming soon
+                  if (isComingSoon) return;
+                  handleTransaction("shefi", "", "700");
+                }}
               />
             </div>
           ) : (

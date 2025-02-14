@@ -135,6 +135,9 @@ export function TransactionModal({
     ? "Loading..."
     : "Send Gift";
 
+  // Don't render if not showing
+  if (!show) return null;
+
   return (
     <div className="fixed inset-0 bg-black/50 backdrop-blur-sm flex items-center justify-center z-50">
       <div className="bg-white rounded-2xl p-6 max-w-md w-full mx-4">
