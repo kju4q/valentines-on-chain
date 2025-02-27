@@ -1,33 +1,10 @@
-export const generateNFTImage = (
-  type: "first" | "milestone",
-  milestone?: number
-) => {
+export const generateNFTImage = (type: "first" | "milestone") => {
+  // For now, return placeholder images
   if (type === "first") {
-    // First gift NFT - Pink heart with sparkles
-    return `data:image/svg+xml;base64,${btoa(`
-      <svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="500" height="500" fill="#FDE6F0"/>
-        <path d="M341.4 168.6C320.8 148 289.2 148 268.6 168.6L250 187.2L231.4 168.6C210.8 148 179.2 148 158.6 168.6C138 189.2 138 220.8 158.6 241.4L250 332.8L341.4 241.4C362 220.8 362 189.2 341.4 168.6Z" fill="#EC4899"/>
-        <circle cx="150" cy="150" r="10" fill="#FFD700">
-          <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite"/>
-        </circle>
-        <circle cx="350" cy="150" r="10" fill="#FFD700">
-          <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" begin="0.5s"/>
-        </circle>
-        <circle cx="250" cy="350" r="10" fill="#FFD700">
-          <animate attributeName="opacity" values="0;1;0" dur="2s" repeatCount="indefinite" begin="1s"/>
-        </circle>
-      </svg>
-    `)}`;
+    // First gift NFT - celebration-neutral design
+    return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDUwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiNGQUYzRTAiLz4KICA8Y2lyY2xlIGN4PSIyNTAiIGN5PSIyNTAiIHI9IjE1MCIgZmlsbD0iI0ZCRDM4RCIgZmlsbC1vcGFjaXR5PSIwLjgiLz4KICA8cGF0aCBkPSJNMjUwIDEwMEMyNTAgMTAwIDMwMCAxNTAgMzUwIDE1MEMzODAgMTUwIDQwMCAxMzAgNDAwIDEwMEM0MDAgNzAgMzgwIDUwIDM1MCA1MEMzMDAgNTAgMjUwIDEwMCAyNTAgMTAwWiIgZmlsbD0iI0Y1OUUwQiIvPgogIDxwYXRoIGQ9Ik0yNTAgMTAwQzI1MCAxMDAgMjAwIDE1MCAxNTAgMTUwQzEyMCAxNTAgMTAwIDEzMCAxMDAgMTAwQzEwMCA3MCAxMjAgNTAgMTUwIDUwQzIwMCA1MCAyNTAgMTAwIDI1MCAxMDBaIiBmaWxsPSIjRjU5RTBCIi8+CiAgPHRleHQgeD0iMjUwIiB5PSIyODAiIGZvbnQtZmFtaWx5PSJBcmlhbCIgZm9udC1zaXplPSIyNCIgdGV4dC1hbmNob3I9Im1pZGRsZSIgZmlsbD0iIzgzNTgwMCI+Rmlyc3QgR2lmdCBDZWxlYnJhdGlvbjwvdGV4dD4KICA8dGV4dCB4PSIyNTAiIHk9IjMyMCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjE2IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjODM1ODAwIj5UaGFuayB5b3UgZm9yIHNwcmVhZGluZyBqb3khPC90ZXh0PgogIDxwYXRoIGQ9Ik0yMDAgMzUwTDIyNSAzNzVMMjUwIDM1MEwyNzUgMzc1TDMwMCAzNTAiIHN0cm9rZT0iI0Y1OUUwQiIgc3Ryb2tlLXdpZHRoPSI4IiBzdHJva2UtbGluZWNhcD0icm91bmQiLz4KPC9zdmc+";
   } else {
-    // Milestone NFT - Multiple hearts with milestone number
-    return `data:image/svg+xml;base64,${btoa(`
-      <svg width="500" height="500" viewBox="0 0 500 500" fill="none" xmlns="http://www.w3.org/2000/svg">
-        <rect width="500" height="500" fill="#FDE6F0"/>
-        <path d="M291.4 148.6C270.8 128 239.2 128 218.6 148.6L200 167.2L181.4 148.6C160.8 128 129.2 128 108.6 148.6C88 169.2 88 200.8 108.6 221.4L200 312.8L291.4 221.4C312 200.8 312 169.2 291.4 148.6Z" fill="#EC4899" opacity="0.6"/>
-        <path d="M391.4 188.6C370.8 168 339.2 168 318.6 188.6L300 207.2L281.4 188.6C260.8 168 229.2 168 208.6 188.6C188 209.2 188 240.8 208.6 261.4L300 352.8L391.4 261.4C412 240.8 412 209.2 391.4 188.6Z" fill="#EC4899"/>
-        <text x="250" y="250" font-size="60" fill="#EC4899" text-anchor="middle" dominant-baseline="middle">${milestone}</text>
-      </svg>
-    `)}`;
+    // Milestone NFT - celebration-neutral design
+    return "data:image/svg+xml;base64,PHN2ZyB3aWR0aD0iNTAwIiBoZWlnaHQ9IjUwMCIgdmlld0JveD0iMCAwIDUwMCA1MDAiIGZpbGw9Im5vbmUiIHhtbG5zPSJodHRwOi8vd3d3LnczLm9yZy8yMDAwL3N2ZyI+CiAgPHJlY3Qgd2lkdGg9IjUwMCIgaGVpZ2h0PSI1MDAiIGZpbGw9IiNGQUYzRTAiLz4KICA8Y2lyY2xlIGN4PSIyNTAiIGN5PSIyNTAiIHI9IjE1MCIgZmlsbD0iI0ZCRDM4RCIgZmlsbC1vcGFjaXR5PSIwLjgiLz4KICA8cGF0aCBkPSJNMjAwIDE1MEgyNTBWMjAwSDMwMFYyNTBIMjUwVjMwMEgyMDBWMjUwSDE1MFYyMDBIMjAwVjE1MFoiIGZpbGw9IiNGNTlFMEIiLz4KICA8dGV4dCB4PSIyNTAiIHk9IjM1MCIgZm9udC1mYW1pbHk9IkFyaWFsIiBmb250LXNpemU9IjI0IiB0ZXh0LWFuY2hvcj0ibWlkZGxlIiBmaWxsPSIjODM1ODAwIj5NaWxlc3RvbmUgQWNoaWV2ZWQhPC90ZXh0PgogIDx0ZXh0IHg9IjI1MCIgeT0iMzgwIiBmb250LWZhbWlseT0iQXJpYWwiIGZvbnQtc2l6ZT0iMTYiIHRleHQtYW5jaG9yPSJtaWRkbGUiIGZpbGw9IiM4MzU4MDAiPlRoYW5rIHlvdSBmb3IgeW91ciBnZW5lcm9zaXR5ITwvdGV4dD4KPC9zdmc+";
   }
 };

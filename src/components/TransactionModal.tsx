@@ -5,8 +5,12 @@ import type { GiftSuggestion } from "../services/ai/GiftAdvisor";
 import { GiftAdvisor } from "../services/ai/GiftAdvisor";
 import { LoadingButton } from "./LoadingButton";
 import { ArrowLeftIcon } from "@heroicons/react/24/outline";
+<<<<<<< HEAD
 import { useValentineNFTs } from "../hooks/useValentineNFTs";
+=======
+>>>>>>> 3b6043a (fixes on the theme and updating the nft for first gift)
 import { usePrivy } from "@privy-io/react-auth";
+import { useCelebrationNFTs } from "../hooks/useCelebrationNFTs";
 
 interface TransactionModalProps {
   transaction?: {
@@ -45,7 +49,7 @@ const TransactionModal = ({
   const [txHash, setTxHash] = useState<string | null>(null);
   const { sendEthGift, sendUsdcGift, sendSheFiGift, ready } =
     useCelebrationGifts();
-  const { mintFirstGiftNFT } = useValentineNFTs();
+  const { mintFirstGiftNFT } = useCelebrationNFTs();
   const { user } = usePrivy();
 
   // Determine transaction type from either source

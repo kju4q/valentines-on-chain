@@ -12,9 +12,7 @@ declare global {
   }
 }
 
-// TODO: User should get Valentine NFT only the first gift
-
-export const useValentineNFTs = () => {
+export const useCelebrationNFTs = () => {
   const [isLoading, setIsLoading] = useState(false);
   const { user } = usePrivy();
   const { wallets } = useWallets();
@@ -58,10 +56,10 @@ export const useValentineNFTs = () => {
 
       console.log("Contract ready:", nftContract);
 
-      // Use a data URI for a simple heart image
+      // Use a data URI for a celebration-themed image
       const metadata = {
-        name: "First Valentine Gift",
-        description: "Awarded for sending your first Valentine's gift!",
+        name: "First Gift Celebration",
+        description: "Awarded for sending your first gift!",
         image: generateNFTImage("first"),
         properties: {
           type: "first_gift",
@@ -110,9 +108,9 @@ export const useValentineNFTs = () => {
       );
 
       await nftContract.erc721.mint({
-        name: `${milestone}th Valentine Gift`,
-        description: `Awarded for sending your ${milestone}th Valentine's gift!`,
-        image: generateNFTImage("milestone", milestone),
+        name: `${milestone}th Gift Milestone`,
+        description: `Awarded for sending your ${milestone}th gift!`,
+        image: generateNFTImage("milestone"),
         properties: {
           type: "milestone",
           count: milestone,

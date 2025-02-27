@@ -39,191 +39,150 @@ const validateEnvVars = () => {
   return true;
 };
 
-const getLoveRank = (points: number) => {
-  if (points >= 1000) return "Cupid";
-  if (points >= 500) return "Angel";
-  if (points >= 250) return "Romeo";
-  if (points >= 100) return "Poet";
-  if (points >= 50) return "Lover";
-  return "Admirer";
+// Update rank names to be celebration-neutral
+const getGiftRank = (points: number) => {
+  if (points >= 1000) return "Gift Master";
+  if (points >= 500) return "Generous Soul";
+  if (points >= 250) return "Joy Bringer";
+  if (points >= 100) return "Celebrator";
+  if (points >= 50) return "Gift Giver";
+  return "Newcomer";
 };
 
 export const Leaderboard = () => {
   const [entries, setEntries] = useState<LeaderboardEntry[]>([]);
   const [loading, setLoading] = useState(true);
-  const [error, setError] = useState<string | null>(null);
-  const { contract } = useContract(import.meta.env.VITE_NFT_CONTRACT_ADDRESS);
   const { user } = usePrivy();
   const { userProfile } = useUserProfile();
-
-  const fetchEvents = async (
-    nftContract: ethers.Contract,
-    filter: any,
-    latestBlock: number
-  ) => {
-    const CHUNK_SIZE = 40000;
-    let events = [];
-    let fromBlock = Math.max(0, latestBlock - 200000); // Last ~200k blocks
-
-    while (fromBlock <= latestBlock) {
-      const toBlock = Math.min(fromBlock + CHUNK_SIZE, latestBlock);
-      try {
-        const chunk = await nftContract.queryFilter(filter, fromBlock, toBlock);
-        events = [...events, ...chunk];
-        console.log(
-          `Fetched ${chunk.length} events from blocks ${fromBlock} to ${toBlock}`
-        );
-      } catch (error) {
-        console.error(
-          `Error fetching events from blocks ${fromBlock} to ${toBlock}:`,
-          error
-        );
-      }
-      fromBlock = toBlock + 1;
-    }
-    return events;
-  };
+  const { contract: nftContract } = useContract(
+    import.meta.env.VITE_NFT_CONTRACT_ADDRESS
+  );
+  const { contract: giftsContract } = useContract(
+    import.meta.env.VITE_GIFTS_CONTRACT_ADDRESS
+  );
 
   useEffect(() => {
-    if (!import.meta.env.VITE_GIFTS_CONTRACT) {
-      setError("Demo Mode: Using mock leaderboard data");
-      // Add some mock data for demo
-      setEntries([
-        {
-          address: "0x742d...44e",
-          nickname: "0xLoveChampion",
-          points: 500,
-          rank: "Cupid",
-          nfts: [],
-          totalGifts: 5,
-        },
-        {
-          address: "0x123...abc",
-          nickname: "0xHeartBreaker",
-          points: 300,
-          rank: "Angel",
-          nfts: [],
-          totalGifts: 3,
-        },
-      ]);
+    if (!validateEnvVars()) {
       setLoading(false);
       return;
     }
 
-    if (!validateEnvVars()) return;
-
     const fetchLeaderboard = async () => {
-      if (!contract || !user?.wallet) return;
-
-      // Check if we have both contract addresses
-      const nftContractAddress = import.meta.env.VITE_NFT_CONTRACT_ADDRESS;
-
-      if (!nftContractAddress) {
-        console.error("Missing contract addresses in .env file");
+      if (!nftContract || !giftsContract) {
+        console.log("Contracts not ready yet");
         return;
       }
 
-      setLoading(true);
       try {
+        setLoading(true);
+
+        // Get the latest block number
         const provider = new ethers.providers.JsonRpcProvider(
-          "https://base-sepolia-rpc.publicnode.com"
+          "https://sepolia.base.org"
         );
-
-        // Create contract instances for both contracts
-        const nftContract = new ethers.Contract(
-          nftContractAddress,
-          [
-            "event Transfer(address indexed from, address indexed to, uint256 indexed tokenId)",
-            "event MilestoneAdded(uint256 indexed tokenId, address indexed sender, uint256 giftValue, string milestone)",
-          ],
-          provider
-        );
-
         const latestBlock = await provider.getBlockNumber();
-        console.log("Latest block:", latestBlock);
 
-        try {
-          // Get transfer and milestone events
-          const [transferEvents, milestoneEvents] = await Promise.all([
-            fetchEvents(
-              nftContract,
-              nftContract.filters.Transfer(),
-              latestBlock
-            ),
-            fetchEvents(
-              nftContract,
-              nftContract.filters.MilestoneAdded(),
-              latestBlock
-            ),
-          ]);
+        // Get all NFT transfers (for first gift NFTs)
+        const filter = nftContract.filters.Transfer();
 
-          console.log("NFT Transfer events:", transferEvents);
-          console.log("Milestone events:", milestoneEvents);
+        // Function to get events in chunks to avoid RPC limitations
+        const getEventsInChunks = async (
+          filter: any,
+          fromBlock: number,
+          latestBlock: number
+        ) => {
+          const CHUNK_SIZE = 40000;
+          let events = [];
+          let fromBlock = Math.max(0, latestBlock - 200000); // Last ~200k blocks
 
-          // Track gifts by sender
-          const giftsBySender = milestoneEvents.reduce((acc, event) => {
-            console.log("Processing milestone event:", event);
-            const sender = event.topics?.[2]; // topics[2] is the indexed sender address
-            if (sender) {
-              const address = ethers.utils.defaultAbiCoder
-                .decode(["address"], sender)[0]
-                .toLowerCase();
-              const giftValue = ethers.utils.defaultAbiCoder.decode(
-                ["uint256"],
-                event.data
-              )[0];
-              console.log(`Found gift from ${address} with value ${giftValue}`);
-              acc[address] = (acc[address] || 0) + 1;
+          while (fromBlock <= latestBlock) {
+            const toBlock = Math.min(fromBlock + CHUNK_SIZE - 1, latestBlock);
+
+            try {
+              const chunk = await nftContract.queryFilter(
+                filter,
+                fromBlock,
+                toBlock
+              );
+              events = [...events, ...chunk];
+              console.log(
+                `Fetched ${chunk.length} events from blocks ${fromBlock} to ${toBlock}`
+              );
+            } catch (error) {
+              console.error(
+                `Error fetching events from blocks ${fromBlock} to ${toBlock}:`,
+                error
+              );
             }
-            return acc;
-          }, {} as Record<string, number>);
 
-          console.log("Final gifts by sender:", giftsBySender);
+            fromBlock = toBlock + 1;
+          }
+          return events;
+        };
 
-          // Track NFT owners
-          const nftOwners = new Map<string, string[]>();
-          transferEvents.forEach((event) => {
-            const to = ethers.utils.defaultAbiCoder
-              .decode(["address"], event.topics[2])[0]
-              .toLowerCase();
-            const tokenId = event.topics[3];
-            if (to) {
-              if (!nftOwners.has(to)) {
-                nftOwners.set(to, []);
-              }
-              nftOwners.get(to)?.push(tokenId);
+        // Get all NFT transfers
+        const transferEvents = await getEventsInChunks(
+          filter,
+          Math.max(0, latestBlock - 200000),
+          latestBlock
+        );
+
+        // Get all gift events
+        const giftFilter = giftsContract.filters.GiftSent();
+        const giftEvents = await getEventsInChunks(
+          giftFilter,
+          Math.max(0, latestBlock - 200000),
+          latestBlock
+        );
+
+        // Process gift events to count gifts by sender
+        const giftsBySender: Record<string, number> = {};
+        giftEvents.forEach((event) => {
+          const sender = ethers.utils.defaultAbiCoder
+            .decode(["address"], event.topics[1])[0]
+            .toLowerCase();
+          giftsBySender[sender] = (giftsBySender[sender] || 0) + 1;
+        });
+
+        // Process NFT transfers to track ownership
+        const nftOwners = new Map<string, string[]>();
+        transferEvents.forEach((event) => {
+          const to = ethers.utils.defaultAbiCoder
+            .decode(["address"], event.topics[2])[0]
+            .toLowerCase();
+          const tokenId = event.topics[3];
+          if (to) {
+            if (!nftOwners.has(to)) {
+              nftOwners.set(to, []);
             }
-          });
+            nftOwners.get(to)?.push(tokenId);
+          }
+        });
 
-          // Combine data for leaderboard
-          const allAddresses = new Set([
-            ...Object.keys(giftsBySender),
-            ...Array.from(nftOwners.keys()),
-          ]);
+        // Combine data for leaderboard
+        const allAddresses = new Set([
+          ...Object.keys(giftsBySender),
+          ...Array.from(nftOwners.keys()),
+        ]);
 
-          // Create leaderboard entries based on NFT ownership and gifts
-          const leaderboardEntries = Array.from(allAddresses).map(
-            (address) => ({
-              address: `${address.slice(0, 6)}...${address.slice(-4)}`,
-              // nickname: generateNickname(address),
-              points: (nftOwners.get(address)?.length || 0) * 50, // 50 points per NFT
-              rank: getLoveRank((nftOwners.get(address)?.length || 0) * 50),
-              nfts: Array.from(nftOwners.get(address) || []).map((tokenId) => ({
-                tokenId,
-                image: generateNFTImage("first"),
-                type: "first" as const,
-              })),
-              totalGifts: giftsBySender[address] || 0,
-            })
-          );
+        // Create leaderboard entries based on NFT ownership and gifts
+        const leaderboardEntries = Array.from(allAddresses).map((address) => ({
+          address: `${address.slice(0, 6)}...${address.slice(-4)}`,
+          nickname: `Gift Giver ${address.slice(0, 4)}`, // Simple nickname for now
+          points: (nftOwners.get(address)?.length || 0) * 50, // 50 points per NFT
+          rank: getGiftRank((nftOwners.get(address)?.length || 0) * 50),
+          nfts: Array.from(nftOwners.get(address) || []).map((tokenId) => ({
+            tokenId,
+            image: generateNFTImage("first"),
+            type: "first" as const,
+          })),
+          totalGifts: giftsBySender[address] || 0,
+        }));
 
-          const sortedEntries = leaderboardEntries.sort(
-            (a, b) => b.points - a.points
-          );
-          setEntries(sortedEntries);
-        } catch (error) {
-          console.error("Error fetching events:", error);
-        }
+        const sortedEntries = leaderboardEntries.sort(
+          (a, b) => b.points - a.points
+        );
+        setEntries(sortedEntries);
       } catch (error) {
         console.error("Failed to fetch leaderboard:", error);
       } finally {
@@ -232,82 +191,114 @@ export const Leaderboard = () => {
     };
 
     fetchLeaderboard();
-  }, [contract, user?.wallet, userProfile]);
-
-  if (loading) {
-    return (
-      <div className="flex justify-center items-center h-48">
-        <span className="animate-spin text-2xl">🌸</span>
-      </div>
-    );
-  }
+  }, [nftContract, giftsContract]);
 
   return (
-    <div className="space-y-6">
-      {error && (
-        <div className="text-pink-600 text-sm text-center bg-pink-50 p-2 rounded-lg">
-          {error}
+    <div className="bg-white/60 backdrop-blur-sm rounded-xl p-6 shadow-md border border-amber-100">
+      <div className="flex items-center gap-2 mb-6">
+        <TrophyIcon className="w-6 h-6 text-amber-500" />
+        <h2 className="text-xl font-bold text-amber-700">Gift Leaderboard</h2>
+      </div>
+
+      {loading ? (
+        <div className="flex justify-center py-8">
+          <div className="animate-spin rounded-full h-12 w-12 border-t-2 border-b-2 border-amber-500"></div>
+        </div>
+      ) : entries.length === 0 ? (
+        <div className="text-center py-8 text-amber-600">
+          No gifts have been sent yet. Be the first to send a gift!
+        </div>
+      ) : (
+        <div className="overflow-x-auto">
+          <table className="w-full">
+            <thead>
+              <tr className="border-b border-amber-200">
+                <th className="px-4 py-2 text-left text-amber-700">Rank</th>
+                <th className="px-4 py-2 text-left text-amber-700">User</th>
+                <th className="px-4 py-2 text-left text-amber-700">Points</th>
+                <th className="px-4 py-2 text-left text-amber-700">Gifts</th>
+                <th className="px-4 py-2 text-left text-amber-700">NFTs</th>
+              </tr>
+            </thead>
+            <tbody>
+              {entries.map((entry, index) => {
+                const isCurrentUser =
+                  user?.wallet?.address &&
+                  entry.address
+                    .toLowerCase()
+                    .includes(user.wallet.address.slice(-4).toLowerCase());
+
+                return (
+                  <tr
+                    key={index}
+                    className={`border-b border-amber-100 ${
+                      isCurrentUser ? "bg-amber-50" : ""
+                    }`}
+                  >
+                    <td className="px-4 py-3 text-amber-800">
+                      {index + 1}
+                      {index < 3 && (
+                        <span className="ml-1">
+                          {index === 0
+                            ? "🏆"
+                            : index === 1
+                            ? "🥈"
+                            : index === 2
+                            ? "🥉"
+                            : ""}
+                        </span>
+                      )}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-amber-800">
+                          {isCurrentUser
+                            ? userProfile?.nickname
+                            : entry.nickname}
+                        </span>
+                        <span className="text-xs text-amber-500">
+                          {entry.address}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex flex-col">
+                        <span className="font-medium text-amber-800">
+                          {entry.points}
+                        </span>
+                        <span className="text-xs text-amber-500">
+                          {entry.rank}
+                        </span>
+                      </div>
+                    </td>
+                    <td className="px-4 py-3 text-amber-800">
+                      {entry.totalGifts}
+                    </td>
+                    <td className="px-4 py-3">
+                      <div className="flex -space-x-2">
+                        {entry.nfts.slice(0, 3).map((nft, i) => (
+                          <div
+                            key={i}
+                            className="w-8 h-8 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-xs"
+                            title="Gift NFT"
+                          >
+                            🎁
+                          </div>
+                        ))}
+                        {entry.nfts.length > 3 && (
+                          <div className="w-8 h-8 rounded-full bg-amber-100 border border-amber-200 flex items-center justify-center text-xs text-amber-700">
+                            +{entry.nfts.length - 3}
+                          </div>
+                        )}
+                      </div>
+                    </td>
+                  </tr>
+                );
+              })}
+            </tbody>
+          </table>
         </div>
       )}
-
-      <div className="text-center mb-8">
-        <h2 className="text-2xl font-bold text-pink-600 flex items-center justify-center gap-2">
-          <TrophyIcon className="w-6 h-6" />
-          Valentine's Hall of Love
-        </h2>
-      </div>
-
-      <div className="bg-white/30 backdrop-blur-sm rounded-xl overflow-hidden">
-        <div className="grid grid-cols-5 gap-4 p-4 bg-pink-500 text-white font-semibold">
-          <div className="col-span-2">Valentine</div>
-          <div className="text-center">Rank</div>
-          <div className="text-center">NFTs</div>
-          <div className="text-center">Points</div>
-        </div>
-
-        <div className="divide-y divide-pink-100">
-          {entries.map((entry, index) => (
-            <div
-              key={entry.address}
-              className="grid grid-cols-5 gap-4 p-4 items-center hover:bg-white/40 transition-colors"
-            >
-              <div className="col-span-2">
-                <div className="font-medium text-pink-600">
-                  {entry.nickname}
-                </div>
-                <div className="text-sm text-pink-500/80">{entry.address}</div>
-              </div>
-              <div className="text-center font-medium text-pink-600">
-                {entry.rank}
-              </div>
-              <div className="text-center flex justify-center gap-1">
-                {entry.nfts.length > 0 ? (
-                  <div className="flex -space-x-2">
-                    {entry.nfts.map((nft) => (
-                      <div
-                        key={nft.tokenId}
-                        className="w-8 h-8 rounded-full overflow-hidden ring-2 ring-white hover:z-10 transition-all transform hover:scale-110"
-                        title={`NFT #${nft.tokenId}`}
-                      >
-                        <img
-                          src={nft.image}
-                          alt={`NFT #${nft.tokenId}`}
-                          className="w-full h-full object-cover"
-                        />
-                      </div>
-                    ))}
-                  </div>
-                ) : (
-                  <span className="text-pink-600/50">No NFTs</span>
-                )}
-              </div>
-              <div className="text-center font-bold text-pink-600">
-                {entry.points}
-              </div>
-            </div>
-          ))}
-        </div>
-      </div>
     </div>
   );
 };
