@@ -4,7 +4,7 @@ pragma solidity ^0.8.20;
 import "@openzeppelin/contracts/token/ERC20/IERC20.sol";
 import "@openzeppelin/contracts/access/Ownable.sol";
 
-contract ValentineGifts is Ownable {
+contract CelebrationGifts is Ownable {
     // USDC contract address
     IERC20 public usdcToken;
     

@@ -8,7 +8,7 @@ import {
   USDC_ABI,
 } from "../../contracts/ValentineGifts";
 
-export function useValentineGifts() {
+export function useCelebrationGifts() {
   const { ready } = usePrivy();
   const { wallets } = useWallets();
   const [isLoading, setIsLoading] = useState(false);

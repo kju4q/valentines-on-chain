@@ -1,6 +1,6 @@
 import { usePrivy } from "@privy-io/react-auth";
-import { useState, useEffect } from "react";
-import HeartLoader from "./HeartLoader";
+import { useState } from "react";
+import Loader from "./Loader";
 import GiftCard from "./GiftCard";
 import TransactionModal from "../components/TransactionModal";
 import {
@@ -65,7 +65,7 @@ const MainPage = () => {
 
   return (
     <>
-      {isLoading && <HeartLoader />}
+      {isLoading && <Loader />}
       {showModal && transaction && (
         <TransactionModal
           show={showModal}

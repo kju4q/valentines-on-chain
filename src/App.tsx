@@ -1,8 +1,8 @@
 import { usePrivy } from "@privy-io/react-auth";
-import LandingPage from "./components/LandingPage.js";
-import MainPage from "./components/MainPage.js";
-import { PrivyProvider } from "./providers/PrivyProvider.js";
-import HeartLoader from "./components/HeartLoader.js";
+import LandingPage from "./components/LandingPage";
+import MainPage from "./components/MainPage";
+import { PrivyProvider } from "./providers/PrivyProvider";
+import Loader from "./components/Loader";
 import { ThirdwebProvider } from "@thirdweb-dev/react";
 import { Chain } from "@thirdweb-dev/chains";
 import { UserProfileProvider } from "./contexts/UserProfileContext.js";
@@ -47,7 +47,7 @@ function AppContent() {
   const { ready, authenticated } = usePrivy();
 
   if (!ready) {
-    return <HeartLoader text="Loading..." />;
+    return <Loader text="Loading..." />;
   }
 
   return authenticated ? <MainPage /> : <LandingPage />;

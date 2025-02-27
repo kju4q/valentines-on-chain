@@ -2,7 +2,7 @@ interface HeartLoaderProps {
   text?: string;
 }
 
-const HeartLoader = ({ text = "Disconnecting..." }: HeartLoaderProps) => {
+const Loader = ({ text = "Disconnecting..." }: HeartLoaderProps) => {
   // Replace hearts with celebration elements
   const elements = Array.from({ length: 3 }, (_, i) => ({
     left: 45 + (i - 1) * 5,
@@ -40,4 +40,4 @@ const HeartLoader = ({ text = "Disconnecting..." }: HeartLoaderProps) => {
   );
 };
 
-export default HeartLoader;
+export default Loader;

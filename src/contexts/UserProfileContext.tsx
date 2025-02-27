@@ -1,28 +1,26 @@
-import { createContext, useContext, useState, useEffect } from "react";
+import React, { createContext, useContext, useState, useEffect } from "react";
 import { usePrivy } from "@privy-io/react-auth";
-import { generateNickname } from "../utils/nicknames";
 
-// Move this to a shared constants file
-export const VALENTINE_NICKNAMES = [
-  "HopelessRomantic",
-  "LoveChampion",
-  "HeartBreaker",
-  "CupidArrow",
-  "SweetHeart",
-  "LovePoet",
-  "RoseKeeper",
-  "DreamLover",
-  "RomanticSoul",
-  "LoveWarrior",
-  "HeartMaker",
-  "ValentineKing",
-  "LoveCrafter",
-  "HeartWhisperer",
-  "RomanceArtist",
+// Define a more general set of nicknames for the platform
+const CELEBRATION_NICKNAMES = [
+  "GiftGiver",
+  "Celebrator",
+  "JoyBringer",
+  "KindSoul",
+  "Generous",
+  "Thoughtful",
+  "Appreciator",
+  "FriendIndeed",
+  "Supporter",
+  "WellWisher",
+  "GiftMaster",
+  "Brightener",
+  "Encourager",
+  "Uplifter",
+  "Recognizer",
 ];
 
 interface UserProfile {
-  address: string;
   nickname: string;
   shortAddress: string;
 }
@@ -31,45 +29,41 @@ interface UserProfileContextType {
   userProfile: UserProfile | null;
 }
 
-const UserProfileContext = createContext<UserProfileContextType | undefined>(
-  undefined
-);
+const UserProfileContext = createContext<UserProfileContextType>({
+  userProfile: null,
+});
 
-export const UserProfileProvider = ({
+export const useUserProfile = () => useContext(UserProfileContext);
+
+export const UserProfileProvider: React.FC<{ children: React.ReactNode }> = ({
   children,
-}: {
-  children: React.ReactNode;
 }) => {
   const { user } = usePrivy();
   const [userProfile, setUserProfile] = useState<UserProfile | null>(null);
 
   useEffect(() => {
     if (user?.wallet?.address) {
+      // Generate nickname based on user's address
       const address = user.wallet.address;
-      const nickname = generateNickname(address);
       const shortAddress = `${address.slice(0, 6)}...${address.slice(-4)}`;
 
+      // Use the last few characters of the address to determine the nickname index
+      const index =
+        parseInt(address.slice(-4), 16) % CELEBRATION_NICKNAMES.length;
+      const nickname = `${CELEBRATION_NICKNAMES[index]}`;
+
       setUserProfile({
-        address,
         nickname,
         shortAddress,
       });
     } else {
       setUserProfile(null);
     }
-  }, [user?.wallet?.address]);
+  }, [user]);
 
   return (
     <UserProfileContext.Provider value={{ userProfile }}>
       {children}
     </UserProfileContext.Provider>
   );
-};
-
-export const useUserProfile = () => {
-  const context = useContext(UserProfileContext);
-  if (context === undefined) {
-    throw new Error("useUserProfile must be used within a UserProfileProvider");
-  }
-  return context;
 };

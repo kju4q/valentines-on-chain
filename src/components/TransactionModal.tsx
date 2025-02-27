@@ -1,5 +1,5 @@
-import React, { useState, useEffect } from "react";
-import { useValentineGifts } from "../hooks/useValentineGifts";
+import React, { useState } from "react";
+import { useCelebrationGifts } from "../hooks/useCelebratingGifts";
 import { AIGiftCreator } from "./AIGiftCreator";
 import type { GiftSuggestion } from "../services/ai/GiftAdvisor";
 import { GiftAdvisor } from "../services/ai/GiftAdvisor";
@@ -44,7 +44,7 @@ const TransactionModal = ({
   const [success, setSuccess] = useState(false);
   const [txHash, setTxHash] = useState<string | null>(null);
   const { sendEthGift, sendUsdcGift, sendSheFiGift, ready } =
-    useValentineGifts();
+    useCelebrationGifts();
   const { mintFirstGiftNFT } = useValentineNFTs();
   const { user } = usePrivy();
 
