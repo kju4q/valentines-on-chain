@@ -4,9 +4,8 @@ import { useContract } from "@thirdweb-dev/react";
 import { generateNFTImage } from "../services/nft/NFTDesigns";
 import { ethers } from "ethers";
 import { usePrivy } from "@privy-io/react-auth";
-import { VALENTINE_NICKNAMES } from "../contexts/UserProfileContext";
 import { useUserProfile } from "../contexts/UserProfileContext";
-import { generateNickname } from "../utils/nicknames";
+// import { generateNickname } from "../utils/nicknames";
 
 interface LeaderboardEntry {
   address: string;
@@ -206,7 +205,7 @@ export const Leaderboard = () => {
           const leaderboardEntries = Array.from(allAddresses).map(
             (address) => ({
               address: `${address.slice(0, 6)}...${address.slice(-4)}`,
-              nickname: generateNickname(address),
+              // nickname: generateNickname(address),
               points: (nftOwners.get(address)?.length || 0) * 50, // 50 points per NFT
               rank: getLoveRank((nftOwners.get(address)?.length || 0) * 50),
               nfts: Array.from(nftOwners.get(address) || []).map((tokenId) => ({
