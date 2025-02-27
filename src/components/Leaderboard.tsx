@@ -88,7 +88,7 @@ export const Leaderboard = () => {
         // Function to get events in chunks to avoid RPC limitations
         const getEventsInChunks = async (
           filter: any,
-          fromBlock: number,
+          startBlock: number,
           latestBlock: number
         ) => {
           const CHUNK_SIZE = 40000;
