@@ -1,4 +1,5 @@
 import { useState } from "react";
+import { useAICelebration } from "../contexts/AICelebrationContext";
 
 interface AIGiftCreatorProps {
   onGiftSelect: (suggestion: any) => void;
@@ -12,33 +13,28 @@ export const AIGiftCreator = ({
   const [isLoading, setIsLoading] = useState(false);
   const [suggestions, setSuggestions] = useState<any[]>([]);
   const [prompt, setPrompt] = useState("");
+  const [relationship, setRelationship] = useState("");
+  const { currentCelebration, suggestGiftMessage } = useAICelebration();
 
   const handleGetSuggestions = async () => {
     setIsLoading(true);
     try {
-      // Simulate API call with some sample suggestions
-      await new Promise((resolve) => setTimeout(resolve, 1500));
+      // Use AI-generated gift ideas from the current celebration
+      const aiSuggestions = await Promise.all(
+        currentCelebration.giftIdeas.map(async (idea) => {
+          const message = await suggestGiftMessage(
+            relationship || undefined,
+            idea.suggestedAmount
+          );
+          return {
+            message,
+            amount: idea.suggestedAmount,
+            description: idea.description,
+          };
+        })
+      );
 
-      // These are sample suggestions - in a real app, you'd call your AI service
-      const sampleSuggestions = [
-        {
-          message:
-            "Celebrating your achievements and the positive impact you make every day. Here's a token of appreciation!",
-          amount: "0.01",
-        },
-        {
-          message:
-            "A small gift to brighten your day and show my appreciation for all you do.",
-          amount: "0.02",
-        },
-        {
-          message:
-            "For all the moments you've inspired others. Keep shining bright!",
-          amount: "0.015",
-        },
-      ];
-
-      setSuggestions(sampleSuggestions);
+      setSuggestions(aiSuggestions);
     } catch (error) {
       console.error("Error getting suggestions:", error);
     } finally {
@@ -60,7 +56,24 @@ export const AIGiftCreator = ({
           id="prompt"
           value={prompt}
           onChange={(e) => setPrompt(e.target.value)}
-          placeholder="e.g., Birthday, Achievement, Thank You..."
+          placeholder={`Celebrating ${currentCelebration.name}`}
+          className="w-full px-4 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-300 focus:border-amber-300 outline-none"
+        />
+      </div>
+
+      <div className="mb-4">
+        <label
+          htmlFor="relationship"
+          className="block text-sm font-medium text-amber-700 mb-1"
+        >
+          Your relationship with recipient (optional)
+        </label>
+        <input
+          type="text"
+          id="relationship"
+          value={relationship}
+          onChange={(e) => setRelationship(e.target.value)}
+          placeholder="Friends, Family, Colleagues..."
           className="w-full px-4 py-2 rounded-lg border border-amber-200 focus:ring-2 focus:ring-amber-300 focus:border-amber-300 outline-none"
         />
       </div>
@@ -113,7 +126,7 @@ export const AIGiftCreator = ({
               <p className="text-amber-800 mb-2">{suggestion.message}</p>
               <div className="flex justify-between items-center">
                 <span className="text-sm text-amber-600">
-                  Suggested amount:
+                  {suggestion.description}
                 </span>
                 <span className="font-semibold text-amber-700">
                   {suggestion.amount} ETH

@@ -11,6 +11,8 @@ import {
 } from "@heroicons/react/24/outline";
 import { Leaderboard } from "./Leaderboard";
 import { useUserProfile } from "../contexts/UserProfileContext";
+import { AICelebrationSelector } from "./AICelebrationSelector";
+import { useAICelebration } from "../contexts/AICelebrationContext";
 
 interface Transaction {
   type: "crypto" | "shefi";
@@ -27,6 +29,7 @@ const MainPage = () => {
   const [transaction, setTransaction] = useState<Transaction | null>(null);
   const [activeTab, setActiveTab] = useState<Tab>("gifts");
   const { userProfile } = useUserProfile();
+  const { currentCelebration } = useAICelebration();
 
   useEffect(() => {
     if (user?.twitter?.username) {
@@ -98,6 +101,9 @@ const MainPage = () => {
             </button>
           </div>
 
+          {/* Add AI Celebration Selector */}
+          <AICelebrationSelector />
+
           {/* Tab Navigation */}
           <div className="flex space-x-4 mb-8">
             <button
@@ -128,9 +134,13 @@ const MainPage = () => {
           {activeTab === "gifts" ? (
             <div className="grid md:grid-cols-2 gap-8">
               <GiftCard
-                title="Send Crypto Gift"
-                description="Send ETH or USDC to celebrate special moments"
-                icon={<CurrencyDollarIcon className="w-8 h-8 text-amber-500" />}
+                title={`Send ${currentCelebration.name} Gift`}
+                description={`Send ETH or USDC to celebrate ${currentCelebration.name.toLowerCase()}`}
+                icon={
+                  <span className="text-3xl">
+                    {currentCelebration.theme.emoji}
+                  </span>
+                }
                 buttonText="Send Gift"
                 onClick={() => handleTransaction("crypto", "")}
               />

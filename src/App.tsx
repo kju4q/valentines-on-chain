@@ -8,6 +8,7 @@ import { Chain } from "@thirdweb-dev/chains";
 import { UserProfileProvider } from "./contexts/UserProfileContext.js";
 import { useEffect, useState } from "react";
 import TransactionModal from "./components/TransactionModal";
+import { AICelebrationProvider } from "./contexts/AICelebrationContext";
 
 export const baseSepolia: Chain = {
   chainId: 84532,
@@ -84,11 +85,14 @@ function App() {
       <PrivyProvider>
         <UserProfileProvider>
           <AppContent />
-          <TransactionModal
+          {/* <TransactionModal
             show={showTransactionModal}
             onClose={() => setShowTransactionModal(false)}
             defaultValues={transactionDetails}
-          />
+          /> */}
+          <AICelebrationProvider>
+            <AppContent />
+          </AICelebrationProvider>
         </UserProfileProvider>
       </PrivyProvider>
     </ThirdwebProvider>
