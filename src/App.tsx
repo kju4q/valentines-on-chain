@@ -7,7 +7,7 @@ import { ThirdwebProvider } from "@thirdweb-dev/react";
 import { Chain } from "@thirdweb-dev/chains";
 import { UserProfileProvider } from "./contexts/UserProfileContext.js";
 import { useEffect, useState } from "react";
-import { TransactionModal } from "./components/TransactionModal";
+import TransactionModal from "./components/TransactionModal";
 
 export const baseSepolia: Chain = {
   chainId: 84532,
