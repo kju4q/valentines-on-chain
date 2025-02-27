@@ -14,6 +14,7 @@
     "test:twitter": "ts-node src/tests/twitter.test.ts",
     "test:tx": "NODE_ENV=production ts-node src/tests/transaction.test.ts",
     "start:api": "NODE_OPTIONS='--loader ts-node/esm' ts-node --project tsconfig.node.json src/server/index.ts",
+    // "start:api": "node --loader ts-node/esm src/server/index.ts",
     "start:bot": "ts-node src/scripts/listenTweets.ts"
   },
   "dependencies": {
